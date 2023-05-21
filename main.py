@@ -1,4 +1,5 @@
 import pandas as pd
+import openpyxl
 from tkinter import *
 from tkinter import filedialog
 from tkinter import messagebox as msg
@@ -26,8 +27,23 @@ class CsvTable:
                                          bg='Green',
                                          fg='Black',
                                          command=self.display_csv_file)
+        self.display_csv_to_xlsx_button = Button(self.f,
+                                                 text='CSV в Xlsx',
+                                                 font=('Arial', 14),
+                                                 bg='Blue',
+                                                 fg='Black',
+                                                 command=self.convert_csv_to_xlsx)
+        self.display_xlsx_to_csv_button = Button(self.f,
+                                                 text='Xlsx в CSV',
+                                                 font=('Arial', 14),
+                                                 bg='Blue',
+                                                 fg='Black',
+                                                 command=self.convert_xlsx_to_csv)
+
         self.message_label.grid(row=0, column=0)
         self.display_csv_button.grid(row=2, column=0)
+        self.display_csv_to_xlsx_button.grid(row=4, column=0)
+        self.display_xlsx_to_csv_button.grid(row=6, column=0)
 
     def save_df(self):
         self.temp_df.loc[self.temp_df['Базовая цена'] == 0, 'Базовая цена'] = ''
@@ -36,8 +52,8 @@ class CsvTable:
         msg.showinfo('Файл сохранен', 'CSV файл сохранен')
 
         diff = compare(
-            load_csv(open('original_data.csv', encoding='utf-8-sig'), key='Артикул'),
-            load_csv(open('import_data.csv', encoding='utf-8-sig'), key='Артикул')
+            load_csv(open('original_data.csv', encoding='utf-8-sig'), key='Имя'),
+            load_csv(open('import_data.csv', encoding='utf-8-sig'), key='Имя')
         )
 
         def elem_printer(total_text, data_list):
@@ -68,7 +84,7 @@ class CsvTable:
                     data_line = f'{key}: {value[0]} -> {value[1]}'
                     total_changes = '\n'.join([total_changes, data_line])
 
-                new_line = f'Артикул: {i_elem.get("key")}, Изменения: {total_changes}\n'
+                new_line = f'Имя: {i_elem.get("key")}, Изменения: {total_changes}\n'
                 total_text = '\n'.join([total_text, new_line])
 
         text_editor = Text()
@@ -107,10 +123,35 @@ class CsvTable:
             print(e)
             msg.showerror('FileNotFoundError', str(e))
 
+    def convert_xlsx_to_csv(self):
+        try:
+            excel_file_name = filedialog.askopenfilename(initialdir='/Desktop',
+                                                       title='Выберите xlsx-файл',
+                                                       filetypes=(('Excel file', '*.xlsx'),))
+            temp_df = pd.read_excel(excel_file_name, index_col=False)
+            temp_df.to_csv("new_csv.csv", index=False, sep=",")
+            msg.showinfo('Успешно!', 'Файл сохранен')
+        except Exception as ex:
+            print(f"Возникла ошибка во время конвертации в xlsx!\n{ex}")
+
+    def convert_csv_to_xlsx(self):
+        try:
+            csv_file_name = filedialog.askopenfilename(initialdir='/Desktop',
+                                                       title='Выберите csv-файл',
+                                                       filetypes=(('CSV file', '*.csv'),))
+            temp_df = pd.read_csv(csv_file_name, on_bad_lines='skip', delimiter=",")
+            writer = pd.ExcelWriter("new_excel.xlsx")
+            temp_df.to_excel(writer, "Sheet1", index=False)
+            writer.close()
+            msg.showinfo('Успешно!', 'Файл сохранен')
+
+        except Exception as ex:
+            print(f"Возникла ошибка во время конвертации в xlsx!\n{ex}")
+
 
 root = Tk()
 root.title('Редактор CSV документов')
 
 obj = CsvTable(root)
-root.geometry('400x100')
+root.geometry('400x170')
 root.mainloop()
